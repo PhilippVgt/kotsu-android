@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Kōtsū - NAISTのバスの時刻表</string>
+    <string name="app_name_short">Kōtsū</string>
+
+    <string name="title_today">今日</string>
+    <string name="title_tomorrow">明日</string>
+    <string name="title_weekend">週末</string>
+    <string name="title_weekday">平日</string>
+
+    <string name="duration">%1$d分</string>
+    <string name="fare">%1$d円</string>
+    <string name="remaining_time">%1$d分</string>
+    <string name="remaining_time_sec">%1$d秒</string>
+
+    <string name="next_bus">次のバス</string>
+    <string name="no_connection">バスは利用できません</string>
+</resources>

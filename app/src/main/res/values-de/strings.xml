@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Kōtsū - NAIST Busfahrplan</string>
+    <string name="app_name_short">Kōtsū</string>
+
+    <string name="title_today">Heute</string>
+    <string name="title_tomorrow">Morgen</string>
+    <string name="title_weekend">Wochenende</string>
+    <string name="title_weekday">Wochentags</string>
+
+    <string name="duration">%1$d min</string>
+    <string name="fare">%1$d&#165;</string>
+    <string name="remaining_time">%1$d min</string>
+    <string name="remaining_time_sec">%1$d sek</string>
+
+    <string name="next_bus">Nächster</string>
+    <string name="no_connection">Kein Bus verfügbar</string>
+</resources>
