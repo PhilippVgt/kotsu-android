@@ -26,7 +26,7 @@ import jp.naist.ubi_lab.kotsu.Models.Containers.Stop;
 
 public class UniversalParser extends TimeTableParser {
 
-    private static final String TAG = "NaraKotsuParser";
+    private static final String TAG = "UniversalParser";
 
     private TimeTableListener listener;
 
