@@ -13,9 +13,10 @@ public abstract class TimeTableParser {
 
     private static TimeTableParser naraKotsuParser;
     private static TimeTableParser kansaiAirportParser;
+    private static TimeTableParser universalParser;
 
     public static TimeTableParser getParser(Stop from, Stop to, TimeTableListener listener) {
-        if(from.getId() == 100001 || from.getId() == 100002 || to.getId() == 100001 || to.getId() == 100002) {
+        /*if(from.getId() == 100001 || from.getId() == 100002 || to.getId() == 100001 || to.getId() == 100002) {
             if(kansaiAirportParser == null) {
                 kansaiAirportParser = new KansaiAirportParser();
             }
@@ -27,7 +28,13 @@ public abstract class TimeTableParser {
             }
             naraKotsuParser.setListener(listener);
             return naraKotsuParser;
+        }*/
+
+        if(universalParser == null) {
+            universalParser = new UniversalParser();
         }
+        universalParser.setListener(listener);
+        return universalParser;
     }
 
 }

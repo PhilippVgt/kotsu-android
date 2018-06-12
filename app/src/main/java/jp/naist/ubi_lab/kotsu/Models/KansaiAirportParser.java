@@ -68,7 +68,6 @@ public class KansaiAirportParser extends TimeTableParser {
         this.date = date;
         this.queryLocation = from;
         this.queryDestination = to;
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         String url = "http://www.kate.co.jp/timetable/detail/GK";
         Log.i(TAG, "Fetching " + url);
 
