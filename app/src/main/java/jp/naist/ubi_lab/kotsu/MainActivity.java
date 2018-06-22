@@ -281,7 +281,7 @@ public class MainActivity extends AppCompatActivity {
         swipeRefresh.setRefreshing(true);
         noConnectionIndicator.setVisibility(View.GONE);
         swipeRefresh.setVisibility(View.VISIBLE);
-        TimeTableParser.getParser(from, to, timeTableListener).parse(from, to, currentDate);
+        TimeTableParser.getParser(timeTableListener).parse(from, to, currentDate);
     }
 
 
@@ -396,15 +396,14 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
-        public MainListAdapter(Context context, List<Departure> departures) {
+        MainListAdapter(Context context, List<Departure> departures) {
             super(context, R.layout.list_item, departures);
         }
 
 
         @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            Departure departure = getItem(position);
-
+        @NonNull
+        public View getView(int position, View convertView, @NonNull ViewGroup parent) {
             ViewHolder viewHolder;
             if (convertView == null) {
                 viewHolder = new ViewHolder();
@@ -423,15 +422,18 @@ public class MainActivity extends AppCompatActivity {
                 viewHolder = (ViewHolder) convertView.getTag();
             }
 
-            SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
-            viewHolder.time.setText(dateFormat.format(departure.getTime()));
-            viewHolder.destination.setText(departure.getDestination().getName());
-            viewHolder.line.setText(departure.getLine().isEmpty() ? "-" : departure.getLine());
-            viewHolder.platform.setText(departure.getPlatform() == 0 ? "-" : String.valueOf(departure.getPlatform()));
-            viewHolder.duration.setText(departure.getDuration() == 0 ? "-" : getString(R.string.duration, departure.getDuration()));
-            viewHolder.fare.setText(departure.getFare() == 0 ? "-" : getString(R.string.fare, departure.getFare()));
+            Departure departure = getItem(position);
+            if(departure != null) {
+                SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+                viewHolder.time.setText(dateFormat.format(departure.getTime()));
+                viewHolder.destination.setText(departure.getDestination().getName());
+                viewHolder.line.setText(departure.getLine().isEmpty() ? "-" : departure.getLine());
+                viewHolder.platform.setText(departure.getPlatform() == 0 ? "-" : String.valueOf(departure.getPlatform()));
+                viewHolder.duration.setText(departure.getDuration() == 0 ? "-" : getString(R.string.duration, departure.getDuration()));
+                viewHolder.fare.setText(departure.getFare() == 0 ? "-" : getString(R.string.fare, departure.getFare()));
 
-            updateRemaining(departure, viewHolder);
+                updateRemaining(departure, viewHolder);
+            }
 
             return convertView;
         }

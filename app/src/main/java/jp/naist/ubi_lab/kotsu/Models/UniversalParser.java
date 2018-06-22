@@ -67,13 +67,13 @@ public class UniversalParser extends TimeTableParser {
                 urlConn = url.openConnection();
                 bufferedReader = new BufferedReader(new InputStreamReader(urlConn.getInputStream()));
 
-                StringBuffer stringBuffer = new StringBuffer();
+                StringBuilder stringBuilder = new StringBuilder();
                 String line;
                 while ((line = bufferedReader.readLine()) != null) {
-                    stringBuffer.append(line);
+                    stringBuilder.append(line);
                 }
 
-                response = new JSONArray(stringBuffer.toString());
+                response = new JSONArray(stringBuilder.toString());
 
             } catch(InterruptedIOException ex) {
                 Log.i(TAG, "Fetching cancelled");

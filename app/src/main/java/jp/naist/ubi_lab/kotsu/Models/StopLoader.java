@@ -45,7 +45,7 @@ public class StopLoader {
     private List<Stop> allStops;
 
 
-    public static List<Stop> defaults = Arrays.asList(
+    private static List<Stop> defaults = Arrays.asList(
             new Stop(560, "NAIST", "奈良先端科学技術大学院大学"),
             new Stop(558, "Takayama Science Town", "高山サイエンスタウン"),
             new Stop(2610, "Gakken-Kita-Ikoma Station", "学研北生駒駅"),
@@ -66,7 +66,7 @@ public class StopLoader {
     );
 
 
-    public StopLoader(Context context) {
+    private StopLoader(Context context) {
         prefs = PreferenceManager.getDefaultSharedPreferences(context);
 
         if(!prefs.contains("stops")) {
@@ -98,18 +98,9 @@ public class StopLoader {
     }
 
 
-    public Stop getStop(int id) {
+    Stop getStop(int id) {
         for(Stop stop : allStops) {
             if(stop.getId() == id) {
-                return stop;
-            }
-        }
-        return null;
-    }
-
-    public Stop getStop(String jp) {
-        for(Stop stop : allStops) {
-            if(jp.contains(stop.getNameJP())) {
                 return stop;
             }
         }
@@ -131,13 +122,13 @@ public class StopLoader {
                 urlConn = url.openConnection();
                 bufferedReader = new BufferedReader(new InputStreamReader(urlConn.getInputStream()));
 
-                StringBuffer stringBuffer = new StringBuffer();
+                StringBuilder stringBuilder = new StringBuilder();
                 String line;
                 while ((line = bufferedReader.readLine()) != null) {
-                    stringBuffer.append(line);
+                    stringBuilder.append(line);
                 }
 
-                response = new JSONArray(stringBuffer.toString());
+                response = new JSONArray(stringBuilder.toString());
 
             } catch(Exception ex) {
                 Log.e(TAG, "JSON expection", ex);

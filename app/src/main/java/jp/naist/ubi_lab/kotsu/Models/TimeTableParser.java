@@ -13,7 +13,7 @@ public abstract class TimeTableParser {
 
     private static TimeTableParser universalParser;
 
-    public static TimeTableParser getParser(Stop from, Stop to, TimeTableListener listener) {
+    public static TimeTableParser getParser(TimeTableListener listener) {
         if(universalParser == null) {
             universalParser = new UniversalParser();
         }
