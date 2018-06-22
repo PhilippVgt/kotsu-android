@@ -9,6 +9,7 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.InterruptedIOException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.text.SimpleDateFormat;
@@ -30,6 +31,8 @@ public class UniversalParser extends TimeTableParser {
 
     private TimeTableListener listener;
 
+    private RetrieveTask runningTask = null;
+
 
     @Override
     public void setListener(TimeTableListener l) {
@@ -42,8 +45,12 @@ public class UniversalParser extends TimeTableParser {
         String url = "https://mphsoft.hadar.uberspace.de/kotsu/departure/" + from.getId() + "/" + to.getId() + "/" + format.format(date);
         Log.i(TAG, "Fetching " + url);
 
-        RetrieveTask task = new RetrieveTask();
-        task.execute(url);
+        if(runningTask != null) {
+            runningTask.cancel(true);
+            runningTask = null;
+        }
+        runningTask = new RetrieveTask();
+        runningTask.execute(url);
     }
 
 
@@ -68,6 +75,9 @@ public class UniversalParser extends TimeTableParser {
 
                 response = new JSONArray(stringBuffer.toString());
 
+            } catch(InterruptedIOException ex) {
+                Log.i(TAG, "Fetching cancelled");
+                return null;
             } catch(Exception ex) {
                 Log.e(TAG, "JSON expection", ex);
                 listener.failure();
@@ -109,7 +119,7 @@ public class UniversalParser extends TimeTableParser {
                     int duration = json.getInt("duration");
                     int fare = json.getInt("fare");
 
-                    Stop destination = Stop.getStop(json.getJSONObject("terminal").getInt("code"));
+                    Stop destination = StopLoader.getInstance().getStop(json.getJSONObject("terminal").getInt("code"));
 
                     departures.add(new Departure(destination, line, platform, fare, time, duration));
                 } catch(Exception e) {

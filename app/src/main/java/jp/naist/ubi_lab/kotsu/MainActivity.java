@@ -3,19 +3,23 @@ package jp.naist.ubi_lab.kotsu;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
+import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
+import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -28,32 +32,31 @@ import java.util.Locale;
 
 import jp.naist.ubi_lab.kotsu.Models.Containers.Departure;
 import jp.naist.ubi_lab.kotsu.Models.Containers.Stop;
+import jp.naist.ubi_lab.kotsu.Models.StopListener;
+import jp.naist.ubi_lab.kotsu.Models.StopLoader;
 import jp.naist.ubi_lab.kotsu.Models.TimeTableListener;
 import jp.naist.ubi_lab.kotsu.Models.TimeTableParser;
 
 public class MainActivity extends AppCompatActivity {
 
     private Date currentDate = new Date();
+    private Stop from, to;
+    private List<Departure> departures = new ArrayList<>();
+
     private TimeTableListener timeTableListener;
 
     private Spinner fromSpinner, toSpinner;
-    private ImageButton swapButton;
 
     private SwipeRefreshLayout swipeRefresh;
-    private ScrollView scrollView;
-    private LinearLayout departuresLayout;
+    private ListView departuresList;
+    private MainListAdapter departuresAdapter;
 
     private LinearLayout nextBusContainer;
     private TextView nextBus;
     private View noConnectionIndicator;
 
-    private Stop from, to;
+    private int nextBusDeparture = 0;
 
-
-    private List<Departure> departures = new ArrayList<>();
-    private List<View> timeViews = new ArrayList<>();
-    private View nextDeparture = null;
-    private View nextBusDeparture = null;
 
     Runnable timeViewUpdater = new Runnable() {
         @Override
@@ -75,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
                     cal.add(Calendar.DAY_OF_MONTH, 1);
                     break;
                 case R.id.navigation_other:
-                    if(cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY || cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
+                    if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY || cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
                         cal.set(Calendar.DAY_OF_WEEK, Calendar.WEDNESDAY);
                     } else {
                         cal.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
@@ -94,21 +97,21 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        setSupportActionBar((Toolbar)findViewById(R.id.toolbar));
+        setSupportActionBar((Toolbar) findViewById(R.id.toolbar));
 
         BottomNavigationView navigation = findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
 
         MenuItem otherItem = navigation.getMenu().findItem(R.id.navigation_other);
         Calendar cal = Calendar.getInstance();
-        if(cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY || cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
+        if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY || cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
             otherItem.setTitle(R.string.title_weekday);
         } else {
             otherItem.setTitle(R.string.title_weekend);
         }
 
 
-        ArrayAdapter<Stop> stopAdapter = new ArrayAdapter<>(this, R.layout.support_simple_spinner_dropdown_item, Stop.getAll());
+        ArrayAdapter<Stop> stopAdapter = new ArrayAdapter<>(this, R.layout.support_simple_spinner_dropdown_item, StopLoader.getInstance().getAll());
         from = stopAdapter.getItem(0);
         fromSpinner = findViewById(R.id.fromSpinner);
         fromSpinner.setAdapter(stopAdapter);
@@ -116,13 +119,15 @@ public class MainActivity extends AppCompatActivity {
         fromSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                if(fromSpinner.getSelectedItem() != from) {
-                    from = (Stop)fromSpinner.getSelectedItem();
+                if (fromSpinner.getSelectedItem() != from) {
+                    from = (Stop) fromSpinner.getSelectedItem();
                     updateTimeTable();
                 }
             }
+
             @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {}
+            public void onNothingSelected(AdapterView<?> adapterView) {
+            }
         });
         to = stopAdapter.getItem(2);
         toSpinner = findViewById(R.id.toSpinner);
@@ -131,16 +136,46 @@ public class MainActivity extends AppCompatActivity {
         toSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                if(toSpinner.getSelectedItem() != to) {
+                if (toSpinner.getSelectedItem() != to) {
                     to = (Stop) toSpinner.getSelectedItem();
                     updateTimeTable();
                 }
             }
+
             @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {}
+            public void onNothingSelected(AdapterView<?> adapterView) {
+            }
         });
 
-        swapButton = findViewById(R.id.swapButton);
+        StopLoader.getInstance().setListener(new StopListener() {
+            @Override
+            public void updated(final List<Stop> stops) {
+                departuresList.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        int fromIndex = 0, toIndex = 2;
+                        for (Stop stop : stops) {
+                            if (stop.getId() == from.getId()) {
+                                fromIndex = stops.indexOf(stop);
+                                from = stop;
+                            }
+                            if (stop.getId() == to.getId()) {
+                                toIndex = stops.indexOf(stop);
+                                to = stop;
+                            }
+                        }
+
+                        ArrayAdapter<Stop> stopAdapter = new ArrayAdapter<>(MainActivity.this, R.layout.support_simple_spinner_dropdown_item, stops);
+                        fromSpinner.setAdapter(stopAdapter);
+                        fromSpinner.setSelection(fromIndex);
+                        toSpinner.setAdapter(stopAdapter);
+                        toSpinner.setSelection(toIndex);
+                    }
+                });
+            }
+        });
+
+        ImageButton swapButton = findViewById(R.id.swapButton);
         swapButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -157,16 +192,17 @@ public class MainActivity extends AppCompatActivity {
                 updateTimeTable();
             }
         });
-        scrollView = findViewById(R.id.scrollview);
-        departuresLayout = findViewById(R.id.departures);
+        departuresList = findViewById(R.id.departures);
+        departuresAdapter = new MainListAdapter(this, departures);
+        departuresList.setAdapter(departuresAdapter);
+        departuresList.setDividerHeight(0);
+        departuresList.setScrollbarFadingEnabled(true);
 
         nextBusContainer = findViewById(R.id.next_bus_container);
         nextBusContainer.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(nextBusDeparture != null) {
-                    scrollView.smoothScrollTo(0, nextBusDeparture.getTop());
-                }
+                smoothScrollToPosition(departuresList, nextBusDeparture);
             }
         });
         nextBus = findViewById(R.id.next_bus);
@@ -179,59 +215,47 @@ public class MainActivity extends AppCompatActivity {
             public void success(final List<Departure> depart) {
                 departures = depart;
 
-                departuresLayout.post(new Runnable() {
+                departuresList.post(new Runnable() {
                     @Override
                     public void run() {
                         swipeRefresh.setRefreshing(false);
 
-                        departuresLayout.removeCallbacks(timeViewUpdater);
-                        departuresLayout.removeAllViews();
-                        timeViews.clear();
-                        nextDeparture = null;
+                        departuresList.removeCallbacks(timeViewUpdater);
+                        departuresAdapter.clear();
+                        departuresAdapter.addAll(departures);
 
-                        SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
-                        for(Departure departure : departures) {
-                            View item = getLayoutInflater().inflate(R.layout.list_item, null);
-                            ((TextView)item.findViewById(R.id.destination)).setText(departure.getDestination().getName());
-                            ((TextView)item.findViewById(R.id.line)).setText(departure.getLine().isEmpty() ? "-" : departure.getLine());
-                            ((TextView)item.findViewById(R.id.platform)).setText(departure.getPlatform() == 0 ? "-" :String.valueOf(departure.getPlatform()));
-                            ((TextView)item.findViewById(R.id.duration)).setText(departure.getDuration() == 0 ? "-" :getString(R.string.duration, departure.getDuration()));
-                            ((TextView)item.findViewById(R.id.fare)).setText(departure.getFare() == 0 ? "-" : getString(R.string.fare, departure.getFare()));
-                            ((TextView)item.findViewById(R.id.time)).setText(dateFormat.format(departure.getTime()));
-                            departuresLayout.addView(item);
-                            timeViews.add(item);
-
-                            if(nextDeparture == null && getRemainingSeconds(departure) > 0) {
-                                nextDeparture = item;
+                        nextBusDeparture = 0;
+                        for (Departure departure : departures) {
+                            if (nextBusDeparture == 0 && getRemainingSeconds(departure) > 0) {
+                                nextBusDeparture = departures.indexOf(departure);
                             }
                         }
 
-                        if(nextDeparture != null) {
-                            departuresLayout.postDelayed(new Runnable() {
-                                @Override
-                                public void run() {
-                                    scrollView.smoothScrollTo(0, nextDeparture.getTop());
-                                }
-                            }, 500);
-                        }
+                        departuresList.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                smoothScrollToPosition(departuresList, nextBusDeparture);
+                            }
+                        }, 500);
 
                         noConnectionIndicator.setVisibility(View.GONE);
+                        swipeRefresh.setVisibility(View.VISIBLE);
 
-                        departuresLayout.post(timeViewUpdater);
+                        departuresList.post(timeViewUpdater);
                     }
                 });
             }
 
             @Override
             public void failure() {
-                departuresLayout.post(new Runnable() {
+                departuresList.post(new Runnable() {
                     @Override
                     public void run() {
                         swipeRefresh.setRefreshing(false);
-                        departuresLayout.removeAllViews();
                         departures.clear();
-                        timeViews.clear();
+                        departuresAdapter.clear();
                         noConnectionIndicator.setVisibility(View.VISIBLE);
+                        swipeRefresh.setVisibility(View.GONE);
                     }
                 });
             }
@@ -243,61 +267,40 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        departuresLayout.post(timeViewUpdater);
+        departuresList.post(timeViewUpdater);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        departuresLayout.removeCallbacks(timeViewUpdater);
+        departuresList.removeCallbacks(timeViewUpdater);
     }
 
 
     private void updateTimeTable() {
-        if(from.getId() == to.getId()) {
-            swipeRefresh.setRefreshing(false);
-            departuresLayout.removeAllViews();
-            departures.clear();
-            timeViews.clear();
-            noConnectionIndicator.setVisibility(View.VISIBLE);
-        } else {
-            swipeRefresh.setRefreshing(true);
-            noConnectionIndicator.setVisibility(View.GONE);
-            TimeTableParser.getParser(from, to, timeTableListener).parse(from, to, currentDate);
-        }
+        swipeRefresh.setRefreshing(true);
+        noConnectionIndicator.setVisibility(View.GONE);
+        swipeRefresh.setVisibility(View.VISIBLE);
+        TimeTableParser.getParser(from, to, timeTableListener).parse(from, to, currentDate);
     }
 
 
     private void updateTimeViews() {
+        departuresAdapter.notifyDataSetChanged();
+
         Departure next = null;
-        for(int i = 0; i < departures.size(); i++) {
+        for (int i = 0; i < departures.size(); i++) {
             int remainingSeconds = getRemainingSeconds(departures.get(i));
             int remainingMinutes = getRemainingMinutes(departures.get(i));
 
-            if(next == null && remainingSeconds > 0 && remainingMinutes < 60) {
+            if (next == null && remainingSeconds > 0 && remainingMinutes < 60) {
                 next = departures.get(i);
-            }
-
-            TextView remainingView = timeViews.get(i).findViewById(R.id.remaining);
-            if(remainingSeconds > 0 && remainingSeconds < 60) {
-                remainingView.setVisibility(View.VISIBLE);
-                remainingView.setText(getString(R.string.remaining_time_sec, remainingSeconds));
-            } else if(remainingMinutes > 0 && remainingMinutes < 60) {
-                remainingView.setVisibility(View.VISIBLE);
-                remainingView.setText(getString(R.string.remaining_time, remainingMinutes));
-            } else {
-                remainingView.setVisibility(View.GONE);
-            }
-
-            if(remainingSeconds < 0) {
-                timeViews.get(i).findViewById(R.id.destination).setEnabled(false);
-                timeViews.get(i).findViewById(R.id.line).setEnabled(false);
             }
         }
 
-        if(next != null) {
-            nextBusDeparture = timeViews.get(departures.indexOf(next));
-            if(nextBusContainer.getVisibility() != View.VISIBLE) {
+        if (next != null) {
+            nextBusDeparture = departures.indexOf(next);
+            if (nextBusContainer.getVisibility() != View.VISIBLE) {
                 nextBusContainer.setVisibility(View.VISIBLE);
                 nextBusContainer.setTranslationY(500);
                 ObjectAnimator animator = ObjectAnimator.ofFloat(nextBusContainer, "translationY", 0);
@@ -307,14 +310,15 @@ public class MainActivity extends AppCompatActivity {
             }
             nextBus.setText(new SimpleDateFormat("mm:ss", Locale.getDefault()).format(getRemainingTime(next)));
         } else {
-            nextBusDeparture = null;
-            if(nextBusContainer.getVisibility() != View.GONE) {
+            nextBusDeparture = 0;
+            if (nextBusContainer.getVisibility() != View.GONE) {
                 nextBusContainer.setTranslationY(0);
                 ObjectAnimator animator = ObjectAnimator.ofFloat(nextBusContainer, "translationY", 500);
                 animator.setDuration(500);
                 animator.setStartDelay(500);
                 animator.addListener(new AnimatorListenerAdapter() {
-                    @Override public void onAnimationEnd(Animator animator) {
+                    @Override
+                    public void onAnimationEnd(Animator animator) {
                         nextBusContainer.setVisibility(View.GONE);
                     }
                 });
@@ -322,7 +326,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        departuresLayout.postDelayed(timeViewUpdater, 1000);
+        departuresList.postDelayed(timeViewUpdater, 1000);
     }
 
 
@@ -338,6 +342,118 @@ public class MainActivity extends AppCompatActivity {
 
     private int getRemainingSeconds(Departure departure) {
         return (int) ((departure.getTime().getTime() - new Date().getTime()) / 1000);
+    }
+
+
+    public static void smoothScrollToPosition(final AbsListView view, final int position) {
+        View child = getChildAtPosition(view, position);
+        if ((child != null) && ((child.getTop() == 0) || ((child.getTop() > 0) && !view.canScrollVertically(1)))) {
+            return;
+        }
+
+        view.setOnScrollListener(new AbsListView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(final AbsListView view, final int scrollState) {
+                if (scrollState == SCROLL_STATE_IDLE) {
+                    view.setOnScrollListener(null);
+
+                    view.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            view.setSelection(position);
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onScroll(final AbsListView view, final int firstVisibleItem, final int visibleItemCount,
+                                 final int totalItemCount) { }
+        });
+
+        view.post(new Runnable() {
+            @Override
+            public void run() {
+                view.smoothScrollToPositionFromTop(position, 0);
+            }
+        });
+    }
+
+    public static View getChildAtPosition(final AdapterView view, final int position) {
+        final int index = position - view.getFirstVisiblePosition();
+        if ((index >= 0) && (index < view.getChildCount())) {
+            return view.getChildAt(index);
+        } else {
+            return null;
+        }
+    }
+
+
+    private class MainListAdapter extends ArrayAdapter<Departure> {
+
+        private class ViewHolder {
+            TextView destination, remaining, time, line, platform, duration, fare;
+        }
+
+
+        public MainListAdapter(Context context, List<Departure> departures) {
+            super(context, R.layout.list_item, departures);
+        }
+
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            Departure departure = getItem(position);
+
+            ViewHolder viewHolder;
+            if (convertView == null) {
+                viewHolder = new ViewHolder();
+                convertView = LayoutInflater.from(getContext()).inflate(R.layout.list_item, parent, false);
+
+                viewHolder.destination = convertView.findViewById(R.id.destination);
+                viewHolder.remaining = convertView.findViewById(R.id.remaining);
+                viewHolder.time = convertView.findViewById(R.id.time);
+                viewHolder.line = convertView.findViewById(R.id.line);
+                viewHolder.platform = convertView.findViewById(R.id.platform);
+                viewHolder.duration = convertView.findViewById(R.id.duration);
+                viewHolder.fare = convertView.findViewById(R.id.fare);
+
+                convertView.setTag(viewHolder);
+            } else {
+                viewHolder = (ViewHolder) convertView.getTag();
+            }
+
+            SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+            viewHolder.time.setText(dateFormat.format(departure.getTime()));
+            viewHolder.destination.setText(departure.getDestination().getName());
+            viewHolder.line.setText(departure.getLine().isEmpty() ? "-" : departure.getLine());
+            viewHolder.platform.setText(departure.getPlatform() == 0 ? "-" : String.valueOf(departure.getPlatform()));
+            viewHolder.duration.setText(departure.getDuration() == 0 ? "-" : getString(R.string.duration, departure.getDuration()));
+            viewHolder.fare.setText(departure.getFare() == 0 ? "-" : getString(R.string.fare, departure.getFare()));
+
+            updateRemaining(departure, viewHolder);
+
+            return convertView;
+        }
+
+        private void updateRemaining(Departure departure, ViewHolder viewHolder) {
+            int remainingSeconds = getRemainingSeconds(departure);
+            int remainingMinutes = getRemainingMinutes(departure);
+
+            if (remainingSeconds > 0 && remainingSeconds < 60) {
+                viewHolder.remaining.setVisibility(View.VISIBLE);
+                viewHolder.remaining.setText(getString(R.string.remaining_time_sec, remainingSeconds));
+            } else if (remainingMinutes > 0 && remainingMinutes < 60) {
+                viewHolder.remaining.setVisibility(View.VISIBLE);
+                viewHolder.remaining.setText(getString(R.string.remaining_time, remainingMinutes));
+            } else {
+                viewHolder.remaining.setVisibility(View.GONE);
+            }
+
+            viewHolder.destination.setEnabled(remainingSeconds >= 0);
+            viewHolder.line.setEnabled(remainingSeconds >= 0);
+        }
+
     }
 
 }

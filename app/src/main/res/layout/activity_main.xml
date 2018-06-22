@@ -71,58 +71,51 @@
 
     </android.support.v7.widget.Toolbar>
 
-    <android.support.v4.widget.SwipeRefreshLayout
-        android:id="@+id/swiperefresh"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginTop="?attr/actionBarSize"
-        android:layout_marginBottom="?attr/actionBarSize">
+        android:layout_height="match_parent">
 
-        <ScrollView
-            android:id="@+id/scrollview"
+        <LinearLayout
+            android:id="@+id/no_connection"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:layout_marginTop="?attr/actionBarSize"
+            android:layout_marginBottom="?attr/actionBarSize"
+            android:visibility="gone">
 
-            <LinearLayout
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                android:layout_marginTop="64dp"
+                android:layout_marginBottom="12dp"
+                app:srcCompat="@drawable/ic_directions_bus_black_64dp"/>
+
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:text="@string/no_connection"
+                android:gravity="center"
+                android:textSize="24sp"/>
 
-                <LinearLayout
-                    android:id="@+id/no_connection"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:visibility="gone">
+        </LinearLayout>
 
-                    <ImageView
-                        android:layout_width="match_parent"
-                        android:layout_height="100dp"
-                        android:layout_marginTop="64dp"
-                        android:layout_marginBottom="12dp"
-                        app:srcCompat="@drawable/ic_directions_bus_black_64dp"/>
+        <android.support.v4.widget.SwipeRefreshLayout
+            android:id="@+id/swiperefresh"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="?attr/actionBarSize"
+            android:layout_marginBottom="?attr/actionBarSize">
 
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/no_connection"
-                        android:gravity="center"
-                        android:textSize="24sp"/>
+            <ListView
+                android:id="@+id/departures"
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
 
-                </LinearLayout>
+        </android.support.v4.widget.SwipeRefreshLayout>
 
-                <LinearLayout
-                    android:id="@+id/departures"
-                    android:orientation="vertical"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingBottom="100dp"/>
-
-            </LinearLayout>
-
-        </ScrollView>
-
-    </android.support.v4.widget.SwipeRefreshLayout>
+    </FrameLayout>
 
     <android.support.design.widget.BottomNavigationView
         android:id="@+id/navigation"
