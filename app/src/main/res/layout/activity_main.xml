@@ -109,9 +109,11 @@
 
             <ListView
                 android:id="@+id/departures"
-                android:orientation="vertical"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="match_parent"
+                android:paddingBottom="96dp"
+                android:clipToPadding="false"
+                android:scrollbarStyle="outsideOverlay" />
 
         </android.support.v4.widget.SwipeRefreshLayout>
 

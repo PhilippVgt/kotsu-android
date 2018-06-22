@@ -6,8 +6,8 @@ android {
         applicationId "jp.naist.ubi_lab.kotsu"
         minSdkVersion 19
         targetSdkVersion 27
-        versionCode 7
-        versionName "1.6"
+        versionCode 8
+        versionName "1.6.1"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary= true
     }
