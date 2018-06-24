@@ -29,7 +29,9 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.TimeZone;
 
+import jp.naist.ubi_lab.kotsu.Models.Containers.Connection;
 import jp.naist.ubi_lab.kotsu.Models.Containers.Departure;
 import jp.naist.ubi_lab.kotsu.Models.Containers.Stop;
 import jp.naist.ubi_lab.kotsu.Models.StopListener;
@@ -71,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-            Calendar cal = Calendar.getInstance();
+            Calendar cal = Calendar.getInstance(TimeZone.getDefault());
 
             switch (item.getItemId()) {
                 case R.id.navigation_tomorrow:
@@ -80,10 +82,13 @@ public class MainActivity extends AppCompatActivity {
                 case R.id.navigation_other:
                     if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY || cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
                         cal.set(Calendar.DAY_OF_WEEK, Calendar.WEDNESDAY);
+                        if(cal.getTime().getTime() < new Date().getTime()) {
+                            cal.add(Calendar.DAY_OF_MONTH, 7);
+                        }
                     } else {
                         cal.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
+                        cal.add(Calendar.DAY_OF_MONTH, 7);
                     }
-                    cal.add(Calendar.DAY_OF_MONTH, 7);
                     break;
             }
             currentDate = cal.getTime();
@@ -103,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
 
         MenuItem otherItem = navigation.getMenu().findItem(R.id.navigation_other);
-        Calendar cal = Calendar.getInstance();
+        Calendar cal = Calendar.getInstance(TimeZone.getDefault());
         if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY || cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
             otherItem.setTitle(R.string.title_weekday);
         } else {
@@ -111,28 +116,28 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
-        ArrayAdapter<Stop> stopAdapter = new ArrayAdapter<>(this, R.layout.support_simple_spinner_dropdown_item, StopLoader.getInstance().getAll());
-        from = stopAdapter.getItem(0);
+        ArrayAdapter<Stop> fromAdapter = new ArrayAdapter<>(this, R.layout.support_simple_spinner_dropdown_item, StopLoader.getInstance().getAll());
+        from = fromAdapter.getItem(0);
         fromSpinner = findViewById(R.id.fromSpinner);
-        fromSpinner.setAdapter(stopAdapter);
+        fromSpinner.setAdapter(fromAdapter);
         fromSpinner.setSelection(0);
         fromSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
                 if (fromSpinner.getSelectedItem() != from) {
-                    from = (Stop) fromSpinner.getSelectedItem();
+                    updateConnections();
                     updateTimeTable();
                 }
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
-            }
+            public void onNothingSelected(AdapterView<?> adapterView) {}
         });
-        to = stopAdapter.getItem(2);
+
+        final ArrayAdapter<Stop> toAdapter = new ArrayAdapter<>(this, R.layout.support_simple_spinner_dropdown_item, StopLoader.getInstance().getAll());
+        to = toAdapter.getItem(2);
         toSpinner = findViewById(R.id.toSpinner);
-        toSpinner.setAdapter(stopAdapter);
-        toSpinner.setSelection(2);
+        toSpinner.setAdapter(toAdapter);
         toSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
@@ -143,33 +148,37 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
-            }
+            public void onNothingSelected(AdapterView<?> adapterView) {}
         });
+        updateConnections();
+        toSpinner.setSelection(0);
 
         StopLoader.getInstance().setListener(new StopListener() {
             @Override
-            public void updated(final List<Stop> stops) {
+            public void stops(final List<Stop> stops) {
                 departuresList.post(new Runnable() {
                     @Override
                     public void run() {
-                        int fromIndex = 0, toIndex = 2;
+                        int fromIndex = 0;
                         for (Stop stop : stops) {
                             if (stop.getId() == from.getId()) {
                                 fromIndex = stops.indexOf(stop);
                                 from = stop;
                             }
-                            if (stop.getId() == to.getId()) {
-                                toIndex = stops.indexOf(stop);
-                                to = stop;
-                            }
                         }
 
-                        ArrayAdapter<Stop> stopAdapter = new ArrayAdapter<>(MainActivity.this, R.layout.support_simple_spinner_dropdown_item, stops);
-                        fromSpinner.setAdapter(stopAdapter);
+                        ArrayAdapter<Stop> fromAdapter = new ArrayAdapter<>(MainActivity.this, R.layout.support_simple_spinner_dropdown_item, stops);
+                        fromSpinner.setAdapter(fromAdapter);
                         fromSpinner.setSelection(fromIndex);
-                        toSpinner.setAdapter(stopAdapter);
-                        toSpinner.setSelection(toIndex);
+                    }
+                });
+            }
+            @Override
+            public void connections(final List<Connection> connections) {
+                departuresList.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        updateConnections();
                     }
                 });
             }
@@ -179,9 +188,28 @@ public class MainActivity extends AppCompatActivity {
         swapButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                int toSelection = toSpinner.getSelectedItemPosition();
-                toSpinner.setSelection(fromSpinner.getSelectedItemPosition());
-                fromSpinner.setSelection(toSelection);
+                Stop fromStop = (Stop) fromSpinner.getSelectedItem();
+                Stop toStop = (Stop) toSpinner.getSelectedItem();
+
+                List<Stop> stops = StopLoader.getInstance().getAll();
+
+                int fromIndex = 0;
+                for(Stop stop : stops) {
+                    if(stop.getId() == toStop.getId()) {
+                        fromIndex = stops.indexOf(stop);
+                    }
+                }
+                fromSpinner.setSelection(fromIndex);
+                updateConnections();
+
+                int toIndex = 0;
+                for(int i = 0; i < toSpinner.getAdapter().getCount(); i++) {
+                    Stop toCandidate = (Stop) toSpinner.getAdapter().getItem(i);
+                    if(toCandidate.getId() == fromStop.getId()) {
+                        toIndex = i;
+                    }
+                }
+                toSpinner.setSelection(toIndex);
             }
         });
 
@@ -277,6 +305,29 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    private void updateConnections() {
+        from = (Stop) fromSpinner.getSelectedItem();
+        to = (Stop) toSpinner.getSelectedItem();
+
+        List<Stop> connections = StopLoader.getInstance().getConnections(from);
+        if(connections == null) {
+            connections = StopLoader.getInstance().getAll();
+        }
+
+        int toIndex = 0;
+        for (Stop stop : connections) {
+            if (stop.getId() == to.getId()) {
+                toIndex = connections.indexOf(stop);
+                to = stop;
+            }
+        }
+
+        ArrayAdapter<Stop> toAdapter = new ArrayAdapter<>(MainActivity.this, R.layout.support_simple_spinner_dropdown_item, connections);
+        toSpinner.setAdapter(toAdapter);
+        toSpinner.setSelection(toIndex);
+    }
+
+
     private void updateTimeTable() {
         swipeRefresh.setRefreshing(true);
         noConnectionIndicator.setVisibility(View.GONE);
@@ -289,6 +340,7 @@ public class MainActivity extends AppCompatActivity {
         departuresAdapter.notifyDataSetChanged();
 
         Departure next = null;
+        int nextIndex = 0;
         for (int i = 0; i < departures.size(); i++) {
             int remainingSeconds = getRemainingSeconds(departures.get(i));
             int remainingMinutes = getRemainingMinutes(departures.get(i));
@@ -296,10 +348,13 @@ public class MainActivity extends AppCompatActivity {
             if (next == null && remainingSeconds > 0 && remainingMinutes < 60) {
                 next = departures.get(i);
             }
+            if (nextIndex == 0 && remainingSeconds > 0) {
+                nextIndex = i;
+            }
         }
+        nextBusDeparture = nextIndex;
 
         if (next != null) {
-            nextBusDeparture = departures.indexOf(next);
             if (nextBusContainer.getVisibility() != View.VISIBLE) {
                 nextBusContainer.setVisibility(View.VISIBLE);
                 nextBusContainer.setTranslationY(500);
@@ -310,7 +365,6 @@ public class MainActivity extends AppCompatActivity {
             }
             nextBus.setText(new SimpleDateFormat("mm:ss", Locale.getDefault()).format(getRemainingTime(next)));
         } else {
-            nextBusDeparture = 0;
             if (nextBusContainer.getVisibility() != View.GONE) {
                 nextBusContainer.setTranslationY(0);
                 ObjectAnimator animator = ObjectAnimator.ofFloat(nextBusContainer, "translationY", 500);
@@ -425,6 +479,7 @@ public class MainActivity extends AppCompatActivity {
             Departure departure = getItem(position);
             if(departure != null) {
                 SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+                dateFormat.setTimeZone(TimeZone.getDefault());
                 viewHolder.time.setText(dateFormat.format(departure.getTime()));
                 viewHolder.destination.setText(departure.getDestination().getName());
                 viewHolder.line.setText(departure.getLine().isEmpty() ? "-" : departure.getLine());

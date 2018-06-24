@@ -1,9 +1,11 @@
 package jp.naist.ubi_lab.kotsu.Models;
 
 import android.os.AsyncTask;
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -20,9 +22,15 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.TimeZone;
 
 import jp.naist.ubi_lab.kotsu.Models.Containers.Departure;
 import jp.naist.ubi_lab.kotsu.Models.Containers.Stop;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 
 public class UniversalParser extends TimeTableParser {
@@ -31,7 +39,7 @@ public class UniversalParser extends TimeTableParser {
 
     private TimeTableListener listener;
 
-    private RetrieveTask runningTask = null;
+    private OkHttpClient client = new OkHttpClient();
 
 
     @Override
@@ -45,104 +53,76 @@ public class UniversalParser extends TimeTableParser {
         String url = "https://mphsoft.hadar.uberspace.de/kotsu/departure/" + from.getId() + "/" + to.getId() + "/" + format.format(date);
         Log.i(TAG, "Fetching " + url);
 
-        if(runningTask != null) {
-            runningTask.cancel(true);
-            runningTask = null;
+        for(Call call : client.dispatcher().runningCalls()) {
+            call.cancel();
         }
-        runningTask = new RetrieveTask();
-        runningTask.execute(url);
-    }
 
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {}
 
-    protected class RetrieveTask extends AsyncTask<String, Void, Void> {
-        @Override
-        protected Void doInBackground(String... params) {
-
-            URLConnection urlConn;
-            BufferedReader bufferedReader = null;
-            JSONArray response;
-
-            try {
-                URL url = new URL(params[0]);
-                urlConn = url.openConnection();
-                bufferedReader = new BufferedReader(new InputStreamReader(urlConn.getInputStream()));
-
-                StringBuilder stringBuilder = new StringBuilder();
-                String line;
-                while ((line = bufferedReader.readLine()) != null) {
-                    stringBuilder.append(line);
-                }
-
-                response = new JSONArray(stringBuilder.toString());
-
-            } catch(InterruptedIOException ex) {
-                Log.i(TAG, "Fetching cancelled");
-                return null;
-            } catch(Exception ex) {
-                Log.e(TAG, "JSON expection", ex);
-                listener.failure();
-                return null;
-            } finally {
-                if(bufferedReader != null) {
-                    try {
-                        bufferedReader.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-
-
-            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-
-            List<Departure> departures = new ArrayList<>();
-
-            for(int i = 0; i < response.length(); i++) {
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                JSONArray json;
                 try {
-                    JSONObject json = response.getJSONObject(i);
-
-                    Calendar cal = Calendar.getInstance();
-                    cal.setTime(format.parse(json.getString("date")));
-                    cal.set(Calendar.HOUR_OF_DAY, json.getInt("hours"));
-                    cal.set(Calendar.MINUTE, json.getInt("minutes"));
-                    cal.set(Calendar.SECOND, 0);
-                    cal.set(Calendar.MILLISECOND, 0);
-                    Date time = cal.getTime();
-
-                    String line = json.getString("line");
-                    if(!Locale.getDefault().getLanguage().equals("ja")) {
-                        line = line.replace("奈", "Kotsu");
-                        line = line.replace("関", "KATE");
-                    }
-
-                    int platform = json.getInt("platform");
-                    int duration = json.getInt("duration");
-                    int fare = json.getInt("fare");
-
-                    Stop destination = StopLoader.getInstance().getStop(json.getJSONObject("terminal").getInt("code"));
-
-                    departures.add(new Departure(destination, line, platform, fare, time, duration));
-                } catch(Exception e) {
+                    json = new JSONArray(response.body().string());
+                } catch(JSONException e) {
                     e.printStackTrace();
+                    return;
+                }
+
+                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+
+                List<Departure> departures = new ArrayList<>();
+
+                for(int i = 0; i < json.length(); i++) {
+                    try {
+                        JSONObject object = json.getJSONObject(i);
+
+                        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("Asia/Tokyo"));
+                        cal.setTime(format.parse(object.getString("date")));
+                        cal.set(Calendar.HOUR_OF_DAY, object.getInt("hours"));
+                        cal.set(Calendar.MINUTE, object.getInt("minutes"));
+                        cal.set(Calendar.SECOND, 0);
+                        cal.set(Calendar.MILLISECOND, 0);
+                        Date time = cal.getTime();
+
+                        String line = object.getString("line");
+                        if(!Locale.getDefault().getLanguage().equals("ja")) {
+                            line = line.replace("奈", "Kotsu");
+                            line = line.replace("関", "KATE");
+                        }
+
+                        int platform = object.getInt("platform");
+                        int duration = object.getInt("duration");
+                        int fare = object.getInt("fare");
+
+                        Stop destination = StopLoader.getInstance().getStop(object.getJSONObject("terminal").getInt("code"));
+
+                        departures.add(new Departure(destination, line, platform, fare, time, duration));
+                    } catch(Exception e) {
+                        e.printStackTrace();
+                        listener.failure();
+                        return;
+                    }
+                }
+
+                if (departures.size() == 0) {
                     listener.failure();
-                    return null;
+                } else {
+                    Collections.sort(departures, new Comparator<Departure>() {
+                        @Override
+                        public int compare(Departure departure, Departure departure2) {
+                            return departure.getTime().compareTo(departure2.getTime());
+                        }
+                    });
+                    listener.success(departures);
                 }
             }
-
-            if (departures.size() == 0) {
-                listener.failure();
-            } else {
-                Collections.sort(departures, new Comparator<Departure>() {
-                    @Override
-                    public int compare(Departure departure, Departure departure2) {
-                        return departure.getTime().compareTo(departure2.getTime());
-                    }
-                });
-                listener.success(departures);
-            }
-
-            return null;
-        }
+        });
     }
 
 }

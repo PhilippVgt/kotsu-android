@@ -6,8 +6,8 @@ android {
         applicationId "jp.naist.ubi_lab.kotsu"
         minSdkVersion 19
         targetSdkVersion 27
-        versionCode 8
-        versionName "1.6.1"
+        versionCode 9
+        versionName "1.7"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary= true
     }
@@ -29,4 +29,5 @@ dependencies {
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     compile 'com.google.code.gson:gson:2.8.0'
+    compile 'com.squareup.okhttp3:okhttp:3.10.0'
 }
