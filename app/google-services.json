@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "257095285549",
+    "firebase_url": "https://kotsu-d2ece.firebaseio.com",
+    "project_id": "kotsu-d2ece",
+    "storage_bucket": "kotsu-d2ece.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:257095285549:android:9d26297b50612a2f",
+        "android_client_info": {
+          "package_name": "jp.naist.ubi_lab.kotsu"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "257095285549-ei9qr71ck8b6fvj3e7hv37bctc3udqfn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANprmjSRvlUGKaaFNXtCtKgbNFZyiASzA"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
