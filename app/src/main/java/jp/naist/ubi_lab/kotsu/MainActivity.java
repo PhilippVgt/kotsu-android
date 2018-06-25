@@ -252,9 +252,9 @@ public class MainActivity extends AppCompatActivity {
                         departuresAdapter.clear();
                         departuresAdapter.addAll(departures);
 
-                        nextBusDeparture = 0;
+                        nextBusDeparture = -1;
                         for (Departure departure : departures) {
-                            if (nextBusDeparture == 0 && getRemainingSeconds(departure) > 0) {
+                            if (nextBusDeparture < 0 && getRemainingSeconds(departure) > 0) {
                                 nextBusDeparture = departures.indexOf(departure);
                             }
                         }
@@ -262,7 +262,7 @@ public class MainActivity extends AppCompatActivity {
                         departuresList.postDelayed(new Runnable() {
                             @Override
                             public void run() {
-                                smoothScrollToPosition(departuresList, nextBusDeparture);
+                                smoothScrollToPosition(departuresList, Math.max(0, nextBusDeparture));
                             }
                         }, 500);
 
@@ -340,7 +340,7 @@ public class MainActivity extends AppCompatActivity {
         departuresAdapter.notifyDataSetChanged();
 
         Departure next = null;
-        int nextIndex = 0;
+        int nextIndex = -1;
         for (int i = 0; i < departures.size(); i++) {
             int remainingSeconds = getRemainingSeconds(departures.get(i));
             int remainingMinutes = getRemainingMinutes(departures.get(i));
@@ -348,11 +348,11 @@ public class MainActivity extends AppCompatActivity {
             if (next == null && remainingSeconds > 0 && remainingMinutes < 60) {
                 next = departures.get(i);
             }
-            if (nextIndex == 0 && remainingSeconds > 0) {
+            if (nextIndex < 0 && remainingSeconds > 0) {
                 nextIndex = i;
             }
         }
-        nextBusDeparture = nextIndex;
+        nextBusDeparture = Math.max(0, nextIndex);
 
         if (next != null) {
             if (nextBusContainer.getVisibility() != View.VISIBLE) {
