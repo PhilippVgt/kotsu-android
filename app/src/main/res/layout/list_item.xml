@@ -20,9 +20,11 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:textSize="18dp"
+            android:textSize="18sp"
             android:textColor="@color/text_primary_disable"
-            android:text="Destination" />
+            android:text="Gakken-Nara-Tomigaoka Station"
+            android:lines="1"
+            android:ellipsize="end"/>
 
         <TextView
             android:id="@+id/remaining"
@@ -30,8 +32,8 @@
             android:layout_height="wrap_content"
             android:paddingLeft="16dp"
             android:gravity="right"
-            android:textSize="18dp"
-            android:text="in 3 min"
+            android:textSize="18sp"
+            android:text="3 min"
             android:textColor="@color/text_accent_disable"
             android:visibility="gone" />
 
@@ -41,7 +43,7 @@
             android:layout_height="wrap_content"
             android:paddingLeft="16dp"
             android:gravity="right"
-            android:textSize="18dp"
+            android:textSize="18sp"
             android:text="16:35"
             android:textColor="@android:color/primary_text_light"
             android:textStyle="bold"/>
@@ -89,7 +91,7 @@
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:scaleType="fitCenter"
-            app:srcCompat="@drawable/ic_access_time_black_24dp"/>
+            app:srcCompat="@drawable/ic_timelapse_black_24dp"/>
 
         <TextView
             android:id="@+id/duration"
@@ -104,7 +106,7 @@
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:scaleType="fitCenter"
-            app:srcCompat="@drawable/ic_monetization_on_black_24dp"/>
+            app:srcCompat="@drawable/ic_payment_black_24dp"/>
 
         <TextView
             android:id="@+id/fare"
