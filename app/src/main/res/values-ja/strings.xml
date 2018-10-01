@@ -15,4 +15,5 @@
 
     <string name="next_bus">次のバス</string>
     <string name="no_connection">バスは利用できません</string>
+    <string name="title_privacy">個人情報保護方針</string>
 </resources>
