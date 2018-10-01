@@ -67,6 +67,14 @@
 
             </FrameLayout>
 
+            <ImageButton
+                android:id="@+id/moreButton"
+                android:layout_width="30dp"
+                android:layout_height="?attr/actionBarSize"
+                app:srcCompat="@drawable/ic_more_vert_black_24dp"
+                style="@style/Widget.AppCompat.Button.Borderless"
+                android:background="?selectableItemBackgroundBorderless"/>
+
         </LinearLayout>
 
     </android.support.v7.widget.Toolbar>

@@ -7,6 +7,7 @@
     <string name="title_tomorrow">Tomorrow</string>
     <string name="title_weekend">Weekend</string>
     <string name="title_weekday">Weekdays</string>
+    <string name="title_privacy">Privacy Policy</string>
 
     <string name="duration">%1$d min</string>
     <string name="fare">&#165;%1$d</string>
