@@ -268,6 +268,8 @@ public class MainActivity extends AppCompatActivity {
         timeTableListener = new TimeTableListener() {
             @Override
             public void success(final List<Departure> depart) {
+                departuresList.removeCallbacks(timeViewUpdater);
+
                 departures = depart;
 
                 departuresList.post(new Runnable() {
@@ -275,7 +277,6 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
                         swipeRefresh.setRefreshing(false);
 
-                        departuresList.removeCallbacks(timeViewUpdater);
                         departuresAdapter.clear();
                         departuresAdapter.addAll(departures);
 
@@ -303,6 +304,8 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void failure() {
+                departuresList.removeCallbacks(timeViewUpdater);
+
                 departuresList.post(new Runnable() {
                     @Override
                     public void run() {
