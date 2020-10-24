@@ -2,10 +2,9 @@ package jp.naist.ubi_lab.kotsu.Models;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.AsyncTask;
 import android.preference.PreferenceManager;
-import android.support.annotation.NonNull;
-import android.util.Log;
+
+import androidx.annotation.NonNull;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -14,11 +13,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,9 +29,6 @@ import okhttp3.Response;
 
 
 public class StopLoader {
-
-    private static final String TAG = "StopLoader";
-
 
     private static StopLoader instance;
     public static StopLoader getInstance() {
@@ -95,7 +87,7 @@ public class StopLoader {
 
         OkHttpClient client = new OkHttpClient();
         Request stopRequest = new Request.Builder()
-                .url("https://mphsoft.hadar.uberspace.de/kotsu/stop")
+                .url("https://mphsoft.uber.space/api/kotsu/stop")
                 .build();
         client.newCall(stopRequest).enqueue(new Callback() {
             @Override
@@ -142,13 +134,13 @@ public class StopLoader {
 
 
         Request connectionRequest = new Request.Builder()
-                .url("https://mphsoft.hadar.uberspace.de/kotsu/connection")
+                .url("https://mphsoft.uber.space/api/kotsu/connection")
                 .build();
         client.newCall(connectionRequest).enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {}
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {}
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 JSONArray json;
                 try {
                     json = new JSONArray(response.body().string());

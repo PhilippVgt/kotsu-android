@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/Kotsu.iml" filepath="$PROJECT_DIR$/Kotsu.iml" />
-      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/kotsu-android.iml" filepath="$PROJECT_DIR$/.idea/modules/kotsu-android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/kotsu-android.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/kotsu-android.app.iml" />
     </modules>
   </component>
 </project>

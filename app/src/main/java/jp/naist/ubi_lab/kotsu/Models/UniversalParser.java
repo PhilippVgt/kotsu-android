@@ -1,19 +1,14 @@
 package jp.naist.ubi_lab.kotsu.Models;
 
-import android.os.AsyncTask;
-import android.support.annotation.NonNull;
 import android.util.Log;
+
+import androidx.annotation.NonNull;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.InterruptedIOException;
-import java.net.URL;
-import java.net.URLConnection;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -50,10 +45,10 @@ public class UniversalParser extends TimeTableParser {
     @Override
     public void parse(Stop from, Stop to, Date date) {
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        String url = "https://mphsoft.hadar.uberspace.de/kotsu/departure/" + from.getId() + "/" + to.getId() + "/" + format.format(date);
+        String url = "https://mphsoft.uber.space/api/kotsu/departure/" + from.getId() + "/" + to.getId() + "/" + format.format(date);
         Log.i(TAG, "Fetching " + url);
 
-        for(Call call : client.dispatcher().runningCalls()) {
+        for (Call call : client.dispatcher().runningCalls()) {
             call.cancel();
         }
 
@@ -62,14 +57,15 @@ public class UniversalParser extends TimeTableParser {
                 .build();
         client.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(@NonNull Call call, @NonNull IOException e) {}
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+            }
 
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 JSONArray json;
                 try {
                     json = new JSONArray(response.body().string());
-                } catch(JSONException e) {
+                } catch (JSONException e) {
                     e.printStackTrace();
                     return;
                 }
@@ -78,7 +74,7 @@ public class UniversalParser extends TimeTableParser {
 
                 List<Departure> departures = new ArrayList<>();
 
-                for(int i = 0; i < json.length(); i++) {
+                for (int i = 0; i < json.length(); i++) {
                     try {
                         JSONObject object = json.getJSONObject(i);
 
@@ -91,7 +87,7 @@ public class UniversalParser extends TimeTableParser {
                         Date time = cal.getTime();
 
                         String line = object.getString("line");
-                        if(!Locale.getDefault().getLanguage().equals("ja")) {
+                        if (!Locale.getDefault().getLanguage().equals("ja")) {
                             line = line.replace("奈", "Kotsu");
                             line = line.replace("関", "KATE");
                         }
@@ -103,7 +99,7 @@ public class UniversalParser extends TimeTableParser {
                         Stop destination = StopLoader.getInstance().getStop(object.getJSONObject("terminal").getInt("code"));
 
                         departures.add(new Departure(destination, line, platform, fare, time, duration));
-                    } catch(Exception e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                         listener.failure();
                         return;
